@@ -1,4 +1,5 @@
 import 'package:browser_app/component/network/provider/network_provider.dart';
+import 'package:browser_app/component/network/view/network_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:provider/provider.dart';
@@ -19,8 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
   InAppWebViewController? inAppWebViewController;
   PullToRefreshController? pcontroller;
   TextEditingController txtWeb = TextEditingController();
-
-  String? get url => null;
+  String? link2;
 
 
   @override
@@ -29,7 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     context.read<NetworkProvider>().checkConnection();
     context.read<HomeProvider>().getBookMarks().then((value) {
-     // var link2 =context.read<HomeProvider>().link.toString();
+      link2 =context.read<HomeProvider>().link.toString();
     });
     pcontroller = PullToRefreshController(
       onRefresh: () {
@@ -54,25 +54,29 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text("BookMark"),
                 ],
               ),onTap: () {
-
-                context.read<HomeProvider>().getBookMarks();
                 showBookMark();
               },),
             ];
           },),
         ],
       ),
-      body: Column(
+      body: context.watch<NetworkProvider>().isInternet == false
+          ? Network_Widget()
+          : Column(
         children: [
+
+          const SizedBox(
+            height: 10,
+          ),
           LinearProgressIndicator(
-            value: context.watch<HomeProvider>().progress,
+            value: providerW!.progress,
           ),
           Expanded(
             child: InAppWebView(
                 initialUrlRequest: URLRequest(
-                    url: WebUri("https://www.google.com/")),
+                    url: WebUri("https://playhop.com/")),
                 onProgressChanged: (controller, progress) {
-                  context.read<HomeProvider>().ProgressIndicator(progress / 100);
+                  providerR!.ProgressIndicator(progress / 100);
                   inAppWebViewController = controller;
                   if (progress == 100) {
                     pcontroller?.endRefreshing();
@@ -87,7 +91,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
                 pullToRefreshController: pcontroller),
           ),
-
         ],
       ),
       bottomNavigationBar: Row(
@@ -95,22 +98,25 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(onPressed: () {
             inAppWebViewController?.loadUrl(
                 urlRequest: URLRequest(
-                    url: WebUri("https://www.google.com/")));
+                    url: WebUri("https://playhop.com/")));
           },icon: const Icon(Icons.home,size: 25,),),
-          Spacer(),
-          IconButton(onPressed: () {
-            context.read<HomeProvider>().addbookmark(context);
-            showBookMark();
+          const Spacer(),
+          IconButton(onPressed: () async{
+            var link = await inAppWebViewController!.getOriginalUrl();
+            providerR!.setBookMarks(link.toString());
+            providerR!.bookMark.add(link.toString());
+            // providerR!.bookMark.add(link.toString());
+            print(link!.toString());
           },icon: const Icon(Icons.bookmark_add),),
-          Spacer(),
+          const Spacer(),
           IconButton(onPressed: () {
             inAppWebViewController!.goBack();
           },icon: const Icon(Icons.arrow_back),),
-          Spacer(),
+          const Spacer(),
           IconButton(onPressed: () {
             inAppWebViewController!.reload();
           },icon: const Icon(Icons.refresh),),
-          Spacer(),
+          const Spacer(),
           IconButton(onPressed: () {
             inAppWebViewController!.goForward();
           },icon: const Icon(Icons.arrow_forward,size: 25,),),
@@ -123,25 +129,29 @@ class _HomeScreenState extends State<HomeScreen> {
   void showBookMark()
   {
     showModalBottomSheet(
-        context: context,
-        builder: (context) {
-          return BottomSheet(onClosing: () {}, builder: (context) {
-            return Container(
-              child: Expanded(
-                child: ListView.builder(
-                  itemCount: providerR!.bookMark.length,
-                  itemBuilder: (context, index) {
-                  return ListTile(
-                    title: Text(providerW!.bookMark[index]) ,onTap: () {
-                    inAppWebViewController!.loadUrl(
-                        urlRequest: URLRequest(url: WebUri("https://www.google.com/")));
-                    },
-                  );
-                },),
-              ),
-            );
-          },);
-        },
+      context: context,
+      builder: (context) {
+        return BottomSheet(onClosing: () {}, builder: (context) {
+          return Expanded(
+            child: ListView.builder(
+              itemCount: providerW!.bookMark.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  onTap: () {
+                    inAppWebViewController!.
+                    loadUrl(
+                        urlRequest:
+                        URLRequest(url: WebUri(providerW!.bookMark[index])));
+                    Navigator.pop(context);
+                  },
+                  title: Text(providerW!.bookMark[index],style: const TextStyle(overflow: TextOverflow.ellipsis),),
+                );
+              },
+            ),
+          );
+        },);
+      },
     );
   }
 }
+

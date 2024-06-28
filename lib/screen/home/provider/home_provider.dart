@@ -1,10 +1,10 @@
-import 'package:browser_app/share_helper.dart';
+import 'package:browser_app/utile/share_helper.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeProvider with ChangeNotifier {
   double progress = 0;
   List<String>bookMark=[];
+  String?link;
 
   void setBookMarks(String link)
   {
@@ -12,17 +12,14 @@ class HomeProvider with ChangeNotifier {
     share.setBookMarkData(link);
     getBookMarks();
     notifyListeners();
+    print(link);
  }
   Future<void> getBookMarks(  )
   async {
     SharedHelper share = SharedHelper();
-    var link = await share.getBookMarkData();
+    link = await share.getBookMarkData();
     notifyListeners();
-  }
-  void addbookmark(url)
-  {
-    bookMark.add(url);
-    notifyListeners();
+    print(link);
   }
   void ProgressIndicator(double p) {
   progress=p;
